@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace KingOfTurkey38\CoinFlip\Inventory;
+namespace KingOfTurkey38\CoinFlip\Menus;
 
 
 use KingOfTurkey38\CoinFlip\libs\muqsit\invmenu\InvMenu;
@@ -16,7 +16,7 @@ use pocketmine\nbt\tag\StringTag;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat as C;
 
-class CoinFlipMenuInventory
+class CoinFlipMenu
 {
 
     /** @var InvMenu */
@@ -46,17 +46,30 @@ class CoinFlipMenuInventory
         if ($itemClicked->getId() === Item::MOB_HEAD) {
             $namedTag = $itemClicked->getNamedTag();
             if ($namedTag->hasTag("wager") && $namedTag->hasTag("username") && $namedTag->hasTag("type")) {
-                $username = $namedTag->getTag("username", StringTag::class);
-                $type = $namedTag->getTag("type", StringTag::class);
-                $wager = $namedTag->getTag("wager", IntTag::class);
+                $username = $namedTag->getTag("username", StringTag::class)->getValue();
+                $wager = intval($namedTag->getTag("wager", IntTag::class)->getValue());
 
                 if ($username === $player->getName()) {
-                    $player->sendMessage(Utils::getPrefix() . C::GRAY . " You can't CoinFlip yourself!");
+                    $player->sendMessage(Utils::getPrefix() . C::GRAY . "You can't CoinFlip yourself!");
                     return false;
                 }
 
-                //TODO: check if player has enough money etc
-                Main::getInstance()->getScheduler()->scheduleRepeatingTask(new CoinFlipRollTask($itemClicked, $player), Utils::getRollTaskTickInterval());
+                if (Main::getInstance()->getEconomy()->myMoney($player) < $wager) {
+                    $player->sendMessage(Utils::getPrefix() . C::GRAY . "You don't have enough money to do this CoinFlip!");
+                    return false;
+                }
+                $player->removeWindow($action->getInventory());
+                $this->menu->getInventory()->removeItem($itemClicked);
+                Utils::removeHead($itemClicked->getNamedTagEntry("submitter")->getValue());
+                $p = Main::getInstance()->getServer()->getPlayerExact((string)$username);
+                $menu = new CoinFlipRollMenu($itemClicked);
+                $menu->getMenu()->getInventory()->setDefaultSendDelay(20);
+                if ($p) {
+                    $menu->sendTo($p);
+                }
+                $menu->sendTo($player);
+
+                Main::getInstance()->getScheduler()->scheduleDelayedRepeatingTask(new CoinFlipRollTask($menu->getMenu(), $itemClicked, $player), 20, Utils::getRollTaskTickInterval());
             }
         }
         return false;

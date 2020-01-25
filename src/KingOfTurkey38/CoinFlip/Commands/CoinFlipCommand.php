@@ -69,6 +69,10 @@ class CoinFlipCommand extends PluginCommand
             $types = ["heads", "tails"];
             if (is_int(intval($args[0])) && in_array(strtolower($args[1]), $types)) {
                 $wager = abs(intval($args[0]));
+                if (Main::getInstance()->getEconomy()->myMoney($sender) < $wager) {
+                    $sender->sendMessage(Utils::getPrefix() . C::GRAY . "You can't CoinFlip more money than you have!");
+                    return true;
+                }
                 $type = strtolower($args[1]) === "heads" ? Utils::HEADS : Utils::TAILS;
                 Utils::addCoinFlip($sender, $type, $wager);
                 $sender->sendMessage(Utils::getPrefix() . C::GRAY . "Successfully submitted your CoinFlip");

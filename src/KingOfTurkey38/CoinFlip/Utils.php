@@ -90,6 +90,39 @@ class Utils
         return $items;
     }
 
+    public static function getCoinFlipHead(Player $player): ?Item
+    {
+        if (!self::hasSubmittedACoinFlip($player)) {
+            return null;
+        }
+
+        $uuid = $player->getUniqueId()->toString();
+        $stmt = Main::getInstance()->getDatabase()->prepare("SELECT * FROM CoinFlips WHERE uuid=:uuid");
+        $stmt->bindValue(":uuid", $uuid);
+        $itemData = $stmt->execute()->fetchArray();
+
+        $meta = 1;
+        if ($itemData["type"] === self::TAILS) {
+            $meta = 0;
+        }
+        $item = Item::get(Item::MOB_HEAD, $meta);
+        $item->setCustomName(C::BOLD . C::WHITE . $itemData["username"]);
+        $item->setLore([
+            "",
+            C::BOLD . C::AQUA . "Wager",
+            C::WHITE . "$" . intval($itemData["money"]),
+            "", C::AQUA . C::BOLD . "Side Chosen",
+            $meta === self::HEADS ? C::WHITE . "Heads" : C::WHITE . "Tails",
+            "",
+            C::GRAY . "Click here to" . C::BOLD . C::GREEN . " ENTER " . C::RESET . C::GRAY . " the bet!"]);
+        $item->setNamedTagEntry(new StringTag("username", $itemData["username"])); //this changes during the coinflip
+        $item->setNamedTagEntry(new StringTag("submitter", $itemData["username"]));
+        $item->setNamedTagEntry(new StringTag("type", $meta === self::HEADS ? "Heads" : "Tails"));
+        $item->setNamedTagEntry(new IntTag("wager", intval($itemData["money"])));
+
+        return $item;
+    }
+
     public static function getOppositeHead(Item $head, string $username): Item
     {
         $item = Item::get($head->getId(), $head->getDamage() === self::TAILS ? self::HEADS : self::TAILS, 1);

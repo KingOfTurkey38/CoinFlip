@@ -8,6 +8,8 @@ use KingOfTurkey38\CoinFlip\libs\muqsit\invmenu\InvMenu;
 use KingOfTurkey38\CoinFlip\Main;
 use KingOfTurkey38\CoinFlip\Utils;
 use pocketmine\item\Item;
+use pocketmine\level\sound\PopSound;
+use pocketmine\nbt\tag\StringTag;
 use pocketmine\Player;
 use pocketmine\scheduler\Task;
 use pocketmine\utils\TextFormat as C;
@@ -44,6 +46,9 @@ class CoinFlipRollTask extends Task
         $newItem = Utils::getOppositeHead($this->head, $username);
         $this->menu->getInventory()->setItem(2, $newItem);
 
+        $sound = new PopSound($this->wagerer->asVector3());
+        $this->wagerer->getLevel()->addSound($sound, $this->menu->getInventory()->getViewers());
+
         $this->head = $newItem;
 
         ++$this->currentRoll;
@@ -55,7 +60,6 @@ class CoinFlipRollTask extends Task
         $submitterName = $this->head->getNamedTagEntry("submitter")->getValue();
         $submitter = Main::getInstance()->getServer()->getPlayerExact($submitterName);
         $money = (int)$this->head->getNamedTagEntry("wager")->getValue();
-        $loser = "";
         if ($this->wagerer->isOnline() || $submitter) {
             if ($winner === $this->wagerer->getName()) {
                 $loser = $submitterName;
@@ -71,14 +75,13 @@ class CoinFlipRollTask extends Task
                 }
             }
         }
-        if ($this->wagerer->isOnline()) {
-            $this->wagerer->removeWindow($this->menu->getInventory());
-        }
-        if ($submitter) {
-            $submitter->removeWindow($this->menu->getInventory());
-        }
-        Main::getInstance()->getEconomy()->reduceMoney($loser, $money);
-        Main::getInstance()->getEconomy()->addMoney($winner, $money);
+        $endItem = Item::get(Item::GLASS_PANE);
+        $endItem->setNamedTagEntry(new StringTag("ended", "true"));
+        $this->menu->getInventory()->setItem(0, $endItem);
+
+        $this->menu->clearSessions(true);
+
+        Main::getInstance()->getEconomy()->addMoney($winner, $money * 2);
         Main::getInstance()->getScheduler()->cancelTask($this->getTaskId());
     }
 }

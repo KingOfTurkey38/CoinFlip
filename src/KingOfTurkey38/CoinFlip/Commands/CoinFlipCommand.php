@@ -48,6 +48,8 @@ class CoinFlipCommand extends PluginCommand
         if (isset($args[0])) {
             if (strtolower($args[0]) === "remove") {
                 if (Utils::hasSubmittedACoinFlip($sender)) {
+                    $head = Utils::getCoinFlipHead($sender);
+                    Main::getInstance()->getEconomy()->addMoney($sender, $head->getNamedTagEntry("wager")->getValue());
                     Utils::removeHead($sender->getName());
                     $sender->sendMessage(Utils::getPrefix() . C::GRAY . "Successfully removed your CoinFlip");
                     return true;
@@ -73,6 +75,7 @@ class CoinFlipCommand extends PluginCommand
                     $sender->sendMessage(Utils::getPrefix() . C::GRAY . "You can't CoinFlip more money than you have!");
                     return true;
                 }
+                Main::getInstance()->getEconomy()->reduceMoney($sender, $wager);
                 $type = strtolower($args[1]) === "heads" ? Utils::HEADS : Utils::TAILS;
                 Utils::addCoinFlip($sender, $type, $wager);
                 $sender->sendMessage(Utils::getPrefix() . C::GRAY . "Successfully submitted your CoinFlip");

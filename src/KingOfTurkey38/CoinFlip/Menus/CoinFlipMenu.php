@@ -58,6 +58,7 @@ class CoinFlipMenu
                     $player->sendMessage(Utils::getPrefix() . C::GRAY . "You don't have enough money to do this CoinFlip!");
                     return false;
                 }
+                Main::getInstance()->getEconomy()->reduceMoney($player, (int)$itemClicked->getNamedTagEntry("wager")->getValue());
                 $player->removeWindow($action->getInventory());
                 $this->menu->getInventory()->removeItem($itemClicked);
                 Utils::removeHead($itemClicked->getNamedTagEntry("submitter")->getValue());

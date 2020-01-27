@@ -8,7 +8,9 @@ use KingOfTurkey38\CoinFlip\libs\muqsit\invmenu\InvMenu;
 use KingOfTurkey38\CoinFlip\Main;
 use KingOfTurkey38\CoinFlip\Utils;
 use pocketmine\item\Item;
+use pocketmine\level\Level;
 use pocketmine\level\sound\PopSound;
+use pocketmine\nbt\tag\NamedTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\Player;
 use pocketmine\scheduler\Task;
@@ -41,13 +43,20 @@ class CoinFlipRollTask extends Task
             $this->end();
             return;
         }
+        /** @var NamedTag $username */
+        $username = $this->head->getNamedTagEntry("username");
+        /** @var NamedTag $submitter */
+        $submitter = $this->head->getNamedTagEntry("submitter");
+        $username = $username->getValue() == $this->wagerer->getName() ? $submitter->getValue() : $this->wagerer->getName();
 
-        $username = $this->head->getNamedTagEntry("username")->getValue() == $this->wagerer->getName() ? $this->head->getNamedTagEntry("submitter")->getValue() : $this->wagerer->getName();
         $newItem = Utils::getOppositeHead($this->head, $username);
         $this->menu->getInventory()->setItem(2, $newItem);
 
-        $sound = new PopSound($this->wagerer->asVector3());
-        $this->wagerer->getLevel()->addSound($sound, $this->menu->getInventory()->getViewers());
+        $level = $this->wagerer->getLevel();
+        if ($level instanceof Level) {
+            $sound = new PopSound($this->wagerer->asVector3());
+            $level->addSound($sound, $this->menu->getInventory()->getViewers());
+        }
 
         $this->head = $newItem;
 
@@ -56,10 +65,16 @@ class CoinFlipRollTask extends Task
 
     public function end(): void
     {
-        $winner = $this->head->getNamedTagEntry("username")->getValue();
-        $submitterName = $this->head->getNamedTagEntry("submitter")->getValue();
+        /** @var NamedTag $winne */
+        $winne = $this->head->getNamedTagEntry("username");
+        $winner = $winne->getValue();
+        /** @var NamedTag $submitterNam */
+        $submitterNam = $this->head->getNamedTagEntry("submitter");
+        $submitterName = $submitterNam->getValue();
         $submitter = Main::getInstance()->getServer()->getPlayerExact($submitterName);
-        $money = (int)$this->head->getNamedTagEntry("wager")->getValue();
+        /** @var NamedTag $wager */
+        $wager = $this->head->getNamedTagEntry("wager");
+        $money = $wager->getValue();
         if ($this->wagerer->isOnline() || $submitter) {
             if ($winner === $this->wagerer->getName()) {
                 $loser = $submitterName;

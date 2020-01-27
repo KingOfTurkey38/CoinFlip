@@ -6,9 +6,13 @@ namespace KingOfTurkey38\CoinFlip;
 
 use pocketmine\item\Item;
 use pocketmine\nbt\tag\IntTag;
+use pocketmine\nbt\tag\NamedTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat as C;
+use pocketmine\utils\UUID;
+use SQLite3Result;
+use SQLite3Stmt;
 
 class Utils
 {
@@ -40,13 +44,25 @@ class Utils
      */
     public static function getRawCoinFlipsData(): array
     {
-        return Main::getInstance()->getDatabase()->query("SELECT * FROM CoinFlips")->fetchArray();
+        $query = Main::getInstance()->getDatabase()->query("SELECT * FROM CoinFlips");
+
+        if ($query instanceof SQLite3Result) {
+            $data = $query->fetchArray();
+            if (is_array($data)) {
+                return $data;
+            }
+        }
+
+        return [];
     }
 
     public static function addCoinFlip(Player $player, int $type, int $wager): void
     {
-        $uuid = $player->getUniqueId()->toString();
+        /** @var UUID $uid */
+        $uid = $player->getUniqueId();
+        $uuid = $uid->toString();
         $username = $player->getName();
+        /** @var SQLite3Stmt $stmt */
         $stmt = Main::getInstance()->getDatabase()->prepare("INSERT OR IGNORE INTO CoinFlips (uuid, username, type, money) VALUES (:uuid, :username, :type, :money)");
         $stmt->bindValue(":type", $type);
         $stmt->bindValue(":money", $wager);
@@ -60,6 +76,7 @@ class Utils
      */
     public static function getCoinFlipsAsItems(): array
     {
+        /** @var SQLite3Stmt $stmt */
         $stmt = Main::getInstance()->getDatabase()->prepare("SELECT * FROM CoinFlips");
         $data = $stmt->execute();
         if (empty($data->fetchArray())) {
@@ -95,10 +112,13 @@ class Utils
         if (!self::hasSubmittedACoinFlip($player)) {
             return null;
         }
-
-        $uuid = $player->getUniqueId()->toString();
+        /** @var UUID $uid */
+        $uid = $player->getUniqueId();
+        $uuid = $uid->toString();
+        /** @var SQLite3Stmt $stmt */
         $stmt = Main::getInstance()->getDatabase()->prepare("SELECT * FROM CoinFlips WHERE uuid=:uuid");
         $stmt->bindValue(":uuid", $uuid);
+        /** @var array $itemData */
         $itemData = $stmt->execute()->fetchArray();
 
         $meta = 1;
@@ -127,24 +147,29 @@ class Utils
     {
         $item = Item::get($head->getId(), $head->getDamage() === self::TAILS ? self::HEADS : self::TAILS, 1);
         $item->setCustomName(C::BOLD . C::WHITE . $username);
+        /** @var NamedTag $wager */
+        $wager = intval($head->getNamedTagEntry("wager"));
+        /** @var NamedTag $submitter */
+        $submitter = $head->getNamedTagEntry("submitter");
         $item->setLore([
             "",
             C::BOLD . C::AQUA . "Wager",
-            C::WHITE . "$" . intval($head->getNamedTagEntry("wager")->getValue()),
+            C::WHITE . "$" . $wager->getValue(),
             "",
             C::AQUA . C::BOLD . "Side Chosen",
             $item->getDamage() === self::HEADS ? "§fHeads" : "§fTails"]);
 
         $item->setNamedTagEntry(new StringTag("username", $username));
-        $item->setNamedTagEntry(new StringTag("submitter", $head->getNamedTagEntry("submitter")->getValue()));
+        $item->setNamedTagEntry(new StringTag("submitter", $submitter->getName()));
         $item->setNamedTagEntry(new StringTag("type", $item->getDamage() === self::HEADS ? "Heads" : "Tails"));
-        $item->setNamedTagEntry(new IntTag("wager", intval($head->getNamedTagEntry("wager")->getValue())));
+        $item->setNamedTagEntry(new IntTag("wager", intval($wager->getValue())));
 
         return $item;
     }
 
     public static function removeHead(string $username): void
     {
+        /** @var SQLite3Stmt $stmt */
         $stmt = Main::getInstance()->getDatabase()->prepare("DELETE FROM CoinFlips WHERE LOWER(username)=:username");
         $stmt->bindValue(":username", strtolower($username));
         $stmt->execute();
@@ -152,7 +177,10 @@ class Utils
 
     public static function hasSubmittedACoinFlip(Player $player): bool
     {
-        $uuid = $player->getUniqueId()->toString();
+        /** @var UUID $uid */
+        $uid = $player->getUniqueId();
+        $uuid = $uid->toString();
+        /** @var SQLite3Stmt $stmt */
         $stmt = Main::getInstance()->getDatabase()->prepare("SELECT * FROM CoinFlips WHERE uuid=:uuid");
         $stmt->bindValue(":uuid", $uuid);
         $data = $stmt->execute()->fetchArray();

@@ -12,6 +12,7 @@ use KingOfTurkey38\CoinFlip\Utils;
 use pocketmine\inventory\transaction\action\SlotChangeAction;
 use pocketmine\item\Item;
 use pocketmine\nbt\tag\IntTag;
+use pocketmine\nbt\tag\NamedTag;
 use pocketmine\nbt\tag\StringTag;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat as C;
@@ -46,23 +47,27 @@ class CoinFlipMenu
         if ($itemClicked->getId() === Item::MOB_HEAD) {
             $namedTag = $itemClicked->getNamedTag();
             if ($namedTag->hasTag("wager") && $namedTag->hasTag("username") && $namedTag->hasTag("type")) {
-                $username = $namedTag->getTag("username", StringTag::class)->getValue();
-                $wager = intval($namedTag->getTag("wager", IntTag::class)->getValue());
+                /** @var NamedTag $username */
+                $username = $namedTag->getTag("username", StringTag::class);
+                /** @var NamedTag $wager */
+                $wager = intval($namedTag->getTag("wager", IntTag::class));
+                /** @var NamedTag $submitter */
+                $submitter = $itemClicked->getNamedTagEntry("submitter");
 
-                if ($username === $player->getName()) {
+                if ($username->getValue() === $player->getName()) {
                     $player->sendMessage(Utils::getPrefix() . C::GRAY . "You can't CoinFlip yourself!");
                     return false;
                 }
 
-                if (Main::getInstance()->getEconomy()->myMoney($player) < $wager) {
+                if (Main::getInstance()->getEconomy()->myMoney($player) < $wager->getValue()) {
                     $player->sendMessage(Utils::getPrefix() . C::GRAY . "You don't have enough money to do this CoinFlip!");
                     return false;
                 }
-                Main::getInstance()->getEconomy()->reduceMoney($player, (int)$itemClicked->getNamedTagEntry("wager")->getValue());
+                Main::getInstance()->getEconomy()->reduceMoney($player, $wager->getValue());
                 $player->removeWindow($action->getInventory());
                 $this->menu->getInventory()->removeItem($itemClicked);
-                Utils::removeHead($itemClicked->getNamedTagEntry("submitter")->getValue());
-                $p = Main::getInstance()->getServer()->getPlayerExact((string)$username);
+                Utils::removeHead($submitter->getValue());
+                $p = Main::getInstance()->getServer()->getPlayerExact((string)$username->getValue());
                 $menu = new CoinFlipRollMenu($itemClicked);
                 $menu->getMenu()->getInventory()->setDefaultSendDelay(20);
                 if ($p) {

@@ -10,7 +10,7 @@ use pocketmine\Player;
 
 class CoinFlipRollMenu
 {
-
+    /** @var InvMenu */
     private $menu;
 
     public function __construct(Item $head)

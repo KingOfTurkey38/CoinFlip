@@ -9,6 +9,8 @@ use KingOfTurkey38\CoinFlip\Menus\CoinFlipMenu;
 use KingOfTurkey38\CoinFlip\Utils;
 use pocketmine\command\CommandSender;
 use pocketmine\command\PluginCommand;
+use pocketmine\item\Item;
+use pocketmine\nbt\tag\NamedTag;
 use pocketmine\Player;
 use pocketmine\utils\TextFormat as C;
 
@@ -48,8 +50,11 @@ class CoinFlipCommand extends PluginCommand
         if (isset($args[0])) {
             if (strtolower($args[0]) === "remove") {
                 if (Utils::hasSubmittedACoinFlip($sender)) {
+                    /** @var Item $head */
                     $head = Utils::getCoinFlipHead($sender);
-                    Main::getInstance()->getEconomy()->addMoney($sender, $head->getNamedTagEntry("wager")->getValue());
+                    /** @var NamedTag $wager */
+                    $wager = $head->getNamedTagEntry("wager");
+                    Main::getInstance()->getEconomy()->addMoney($sender, $wager->getValue());
                     Utils::removeHead($sender->getName());
                     $sender->sendMessage(Utils::getPrefix() . C::GRAY . "Successfully removed your CoinFlip");
                     return true;

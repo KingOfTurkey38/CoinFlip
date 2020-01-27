@@ -22,10 +22,13 @@ class Main extends PluginBase implements Listener
 
     public function onEnable(): void
     {
-        $this->economy = $this->getServer()->getPluginManager()->getPlugin("EconomyAPI");
-        if (!$this->economy) {
+        $economy = $this->getServer()->getPluginManager()->getPlugin("EconomyAPI");
+        if (!$economy instanceof EconomyAPI) {
             $this->getLogger()->critical("You need EconomyAPI (https://poggit.pmmp.io/p/EconomyAPI/) to make CoinFlip work");
             $this->getServer()->getPluginManager()->disablePlugin($this);
+        }
+        if ($economy instanceof EconomyAPI) { //phpstan level 5 stfu
+            $this->economy = $economy;
         }
         $this->initDatabase();
         self::$instance = $this;
@@ -67,7 +70,7 @@ class Main extends PluginBase implements Listener
         return $this->economy;
     }
 
-    public function onDisable()
+    public function onDisable(): void
     {
         $this->database->close();
     }

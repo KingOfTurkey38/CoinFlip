@@ -148,7 +148,7 @@ class Utils
         $item = Item::get($head->getId(), $head->getDamage() === self::TAILS ? self::HEADS : self::TAILS, 1);
         $item->setCustomName(C::BOLD . C::WHITE . $username);
         /** @var NamedTag $wager */
-        $wager = intval($head->getNamedTagEntry("wager"));
+        $wager = $head->getNamedTagEntry("wager");
         /** @var NamedTag $submitter */
         $submitter = $head->getNamedTagEntry("submitter");
         $item->setLore([
@@ -160,7 +160,7 @@ class Utils
             $item->getDamage() === self::HEADS ? "§fHeads" : "§fTails"]);
 
         $item->setNamedTagEntry(new StringTag("username", $username));
-        $item->setNamedTagEntry(new StringTag("submitter", $submitter->getName()));
+        $item->setNamedTagEntry(new StringTag("submitter", $submitter->getValue()));
         $item->setNamedTagEntry(new StringTag("type", $item->getDamage() === self::HEADS ? "Heads" : "Tails"));
         $item->setNamedTagEntry(new IntTag("wager", intval($wager->getValue())));
 

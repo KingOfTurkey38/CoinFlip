@@ -50,7 +50,7 @@ class CoinFlipMenu
                 /** @var NamedTag $username */
                 $username = $namedTag->getTag("username", StringTag::class);
                 /** @var NamedTag $wager */
-                $wager = intval($namedTag->getTag("wager", IntTag::class));
+                $wager = $namedTag->getTag("wager", IntTag::class);
                 /** @var NamedTag $submitter */
                 $submitter = $itemClicked->getNamedTagEntry("submitter");
 

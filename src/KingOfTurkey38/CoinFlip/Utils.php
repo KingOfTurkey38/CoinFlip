@@ -79,9 +79,6 @@ class Utils
         /** @var SQLite3Stmt $stmt */
         $stmt = Main::getInstance()->getDatabase()->prepare("SELECT * FROM CoinFlips");
         $data = $stmt->execute();
-        if (empty($data->fetchArray())) {
-            return [];
-        }
         $items = [];
         while ($itemData = $data->fetchArray()) {
             $meta = 1;
